@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Salle en 3D · Dieu n’est pas obligé · Roméo Mivekannin · Galerie Cécile Fakhoury</title>
+<link rel="icon" href="img/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=2">
+<script type="importmap">{"imports":{"three":"./lib/three.module.min.js"}}</script>
+</head>
+<body>
+<div id="demo" role="note"><span data-k="demo">Démonstration · salle imaginée, ce n’est pas la galerie réelle</span></div>
+
+<canvas id="scene" aria-label="Salle d’exposition en 3D"></canvas>
+
+<header id="top">
+  <img src="img/logo.png" alt="Galerie Cécile Fakhoury" class="logo" width="150" height="50">
+  <div class="lang" role="group" aria-label="Langue">
+    <button data-lang="fr" aria-pressed="true">FR</button><button data-lang="en" aria-pressed="false">EN</button>
+  </div>
+</header>
+
+<div id="caption" hidden><em id="cap-title"></em><span id="cap-n"></span></div>
+
+<nav id="bar" aria-label="Visite">
+  <button id="prev" aria-label="Œuvre précédente">‹</button>
+  <button id="tour" class="main"><span class="ico">▶</span> <span data-k="tour">Visite guidée</span></button>
+  <button id="next" aria-label="Œuvre suivante">›</button>
+  <button id="help" aria-label="Aide">?</button>
+</nav>
+
+<div id="hint" hidden></div>
+
+<aside id="cartel" hidden aria-live="polite">
+  <button class="close" id="cclose" aria-label="Fermer">×</button>
+  <div class="cimg"><img id="c-img" alt=""></div>
+  <div class="cbody">
+    <p class="artist">Roméo Mivekannin</p>
+    <h2 id="c-title"></h2>
+    <p class="year">2026</p>
+    <p id="c-med"></p>
+    <p id="c-dim"></p>
+    <p class="courtesy" data-k="courtesy">Courtesy de l’artiste et de la Galerie Cécile Fakhoury</p>
+    <form id="ask">
+      <button type="button" id="askbtn" class="cta" data-k="ask">Demander le dossier</button>
+      <div id="askform" hidden>
+        <label><span data-k="name">Nom et prénom</span><input name="n" autocomplete="off"></label>
+        <label><span data-k="mail">E-mail</span><input name="e" type="email" autocomplete="off"></label>
+        <button type="submit" class="cta" data-k="send">Envoyer la demande</button>
+        <p class="small" data-k="nosend">Démonstration : rien n’est envoyé.</p>
+      </div>
+      <p id="askok" hidden><strong data-k="thanks">Merci.</strong> <span data-k="thanks2">Dans la version en service, la galerie recevrait votre demande et enverrait le dossier de l’œuvre. Ici, rien n’a été envoyé.</span></p>
+    </form>
+  </div>
+</aside>
+
+<section id="intro">
+  <div class="inner">
+    <img src="img/logo.png" alt="Galerie Cécile Fakhoury" class="ilogo" width="240" height="80">
+    <p class="kick" data-k="kick">Exposition personnelle · Abidjan</p>
+    <h1><em>Dieu n’est pas obligé</em></h1>
+    <p class="artist2">Roméo Mivekannin</p>
+    <p class="dates" data-k="dates">5 novembre 2026 — 9 janvier 2027</p>
+    <p class="lead" data-k="lead">Quatorze peintures, acrylique sur velours libre noir, accrochées à l’échelle de leurs dimensions réelles.</p>
+    <div id="load"><div id="loadbar"></div></div>
+    <p id="loadtxt" class="small"><span data-k="loading">Chargement des œuvres</span> <span id="pct">0 %</span></p>
+    <div id="go" hidden>
+      <button id="enter" class="cta big" data-k="enter">Entrer dans la salle</button>
+      <button id="enter-tour" class="ghost" data-k="entertour">Commencer par la visite guidée</button>
+    </div>
+    <p class="small note" data-k="note">Salle imaginée pour la démonstration : ce n’est pas le lieu réel. Images : Galerie Cécile Fakhoury, cecilefakhoury.com.</p>
+  </div>
+</section>
+
+<div id="nogl" hidden><p data-k="nogl">Votre navigateur n’affiche pas la 3D. Les œuvres restent visibles sur le site de la galerie.</p></div>
+
+<script src="data.js?v=2"></script>
+<script type="module" src="salle.js?v=2"></script>
+</body>
+</html>
