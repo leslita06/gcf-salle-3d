@@ -14,7 +14,9 @@ header>*{pointer-events:auto}
 .lang button{padding:6px 10px;font-size:12px;letter-spacing:.08em;color:var(--grey)}
 .lang button[aria-pressed=true]{color:var(--ink);font-weight:600}
 #caption{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;z-index:15;background:rgba(245,242,236,.9);padding:8px 14px;font-family:var(--serif);font-size:18px;max-width:min(92vw,720px);text-align:center;border:1px solid var(--line)}
-#caption span{font-family:var(--sans);font-size:11px;color:var(--grey);margin-left:10px;letter-spacing:.06em}
+#caption{display:flex;align-items:center;justify-content:center;gap:12px}
+#caption em{min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;line-height:1.2}
+#caption span{flex:0 0 auto;white-space:nowrap;font-family:var(--sans);font-size:11px;color:var(--grey);letter-spacing:.06em}
 #bar{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:20;display:flex;gap:6px;background:rgba(245,242,236,.92);border:1px solid var(--line);padding:6px}
 #bar button{min-width:42px;height:42px;font-size:20px;line-height:1}
 #bar button:hover{background:#ebe6dc}
@@ -60,7 +62,7 @@ header>*{pointer-events:auto}
   .logo{height:32px;padding:4px 8px}
   #bar{bottom:calc(14px + env(safe-area-inset-bottom))}
   #bar .main{padding:0 12px}
-  #caption{bottom:78px;font-size:15px}
+  #caption{bottom:78px;font-size:15px;text-align:left;padding:7px 12px}
   #hint{bottom:76px}
   #cartel{top:auto;left:0;right:0;bottom:0;width:100%;max-height:78vh;border-left:0;border-right:0;border-bottom:0}
   .cimg{min-height:140px;padding:12px}
