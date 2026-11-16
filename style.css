@@ -1,0 +1,71 @@
+:root{--bg:#F5F2EC;--ink:#111111;--grey:#6E6A64;--line:#D8D3CA;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Inter',system-ui,sans-serif}
+[hidden]{display:none!important}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:400;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#scene{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none;cursor:grab}
+#scene.drag{cursor:grabbing}
+#scene.hover{cursor:pointer}
+#demo{position:fixed;top:0;left:0;right:0;z-index:40;text-align:center;font-size:11px;letter-spacing:.06em;padding:5px 10px;background:rgba(17,17,17,.82);color:#F5F2EC}
+header{position:fixed;top:30px;left:24px;right:24px;z-index:20;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+header>*{pointer-events:auto}
+.logo{height:40px;width:auto;background:rgba(245,242,236,.78);padding:6px 10px;border-radius:2px}
+.lang{display:flex;background:rgba(245,242,236,.85);border:1px solid var(--line)}
+.lang button{padding:6px 10px;font-size:12px;letter-spacing:.08em;color:var(--grey)}
+.lang button[aria-pressed=true]{color:var(--ink);font-weight:600}
+#caption{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;z-index:15;background:rgba(245,242,236,.9);padding:8px 14px;font-family:var(--serif);font-size:18px;max-width:min(92vw,720px);text-align:center;border:1px solid var(--line)}
+#caption span{font-family:var(--sans);font-size:11px;color:var(--grey);margin-left:10px;letter-spacing:.06em}
+#bar{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:20;display:flex;gap:6px;background:rgba(245,242,236,.92);border:1px solid var(--line);padding:6px}
+#bar button{min-width:42px;height:42px;font-size:20px;line-height:1}
+#bar button:hover{background:#ebe6dc}
+#bar .main{white-space:nowrap;font-size:13px;letter-spacing:.06em;padding:0 16px;background:var(--ink);color:var(--bg)}
+#bar .main:hover{background:#333}
+#bar .main .ico{font-size:10px;margin-right:4px}
+#bar #help{font-size:14px;color:var(--grey)}
+#hint{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:18;background:rgba(17,17,17,.86);color:var(--bg);font-size:12.5px;line-height:1.55;padding:10px 16px;max-width:min(92vw,520px);text-align:center}
+#cartel{position:fixed;z-index:30;top:62px;right:24px;bottom:24px;width:min(400px,calc(100vw - 48px));background:var(--bg);border:1px solid var(--line);box-shadow:0 18px 50px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:auto}
+#cartel .close{position:absolute;top:6px;right:8px;font-size:28px;width:40px;height:40px;z-index:2;background:rgba(245,242,236,.85)}
+.cimg{background:#111;display:flex;align-items:center;justify-content:center;padding:18px;min-height:200px}
+.cimg img{max-width:100%;max-height:34vh;display:block}
+.cbody{padding:20px 24px 26px}
+.cbody .artist{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--grey);margin-bottom:8px}
+.cbody h2{font-family:var(--serif);font-style:italic;font-weight:500;font-size:25px;line-height:1.15;margin-bottom:6px}
+.cbody p{font-size:13.5px;line-height:1.55}
+.cbody .year{margin-bottom:6px}
+.cbody .courtesy{color:var(--grey);font-size:12px;margin-top:10px}
+.cta{display:inline-block;margin-top:18px;background:var(--ink);color:var(--bg);padding:12px 20px;font-size:13px;letter-spacing:.06em}
+.cta:hover{background:#333}
+#askform label{display:block;margin-top:14px;font-size:12px;color:var(--grey)}
+#askform input{display:block;width:100%;margin-top:4px;padding:9px 10px;border:1px solid var(--line);background:#fff;font:inherit;font-size:14px}
+#askok{margin-top:16px;font-size:13px;line-height:1.55;border-left:2px solid var(--ink);padding-left:12px}
+.small{font-size:11.5px;color:var(--grey);margin-top:10px;line-height:1.5}
+#intro{position:fixed;inset:0;z-index:35;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:60px 24px 24px;transition:opacity .7s}
+#intro.out{opacity:0;pointer-events:none}
+#intro .inner{max-width:520px;text-align:center}
+.ilogo{width:200px;height:auto;margin-bottom:34px}
+.kick{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--grey);margin-bottom:12px}
+#intro h1{font-family:var(--serif);font-weight:400;font-size:clamp(40px,8vw,62px);line-height:1}
+.artist2{font-family:var(--serif);font-size:24px;margin-top:8px}
+.dates{font-size:13px;margin-top:12px;letter-spacing:.04em}
+.lead{font-size:14px;line-height:1.6;margin:22px auto 0;color:#333;max-width:420px}
+#load{height:1px;background:var(--line);margin:30px auto 0;max-width:260px;overflow:hidden}
+#loadbar{height:100%;width:0;background:var(--ink);transition:width .25s}
+#go{margin-top:26px;display:flex;flex-direction:column;align-items:center;gap:6px}
+#go .big{padding:15px 30px;font-size:14px;margin-top:0}
+.ghost{font-size:12.5px;color:var(--grey);text-decoration:underline;text-underline-offset:3px;padding:8px}
+.note{margin-top:30px}
+#nogl{position:fixed;inset:0;z-index:50;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:30px;text-align:center;font-family:var(--serif);font-size:22px}
+@media (max-width:640px){
+  header{top:28px;left:12px;right:12px}
+  .logo{height:32px;padding:4px 8px}
+  #bar{bottom:calc(14px + env(safe-area-inset-bottom))}
+  #bar .main{padding:0 12px}
+  #caption{bottom:78px;font-size:15px}
+  #hint{bottom:76px}
+  #cartel{top:auto;left:0;right:0;bottom:0;width:100%;max-height:78vh;border-left:0;border-right:0;border-bottom:0}
+  .cimg{min-height:140px;padding:12px}
+  .cimg img{max-height:24vh}
+  .cbody{padding:16px 18px 22px}
+  .cbody h2{font-size:22px}
+}
+#hint,#caption{width:max-content}
