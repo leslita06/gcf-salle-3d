@@ -168,7 +168,7 @@ function build() {
       box.position.z = -.008; g.add(box);
       const tex = loader.load(o.img); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
       const pic = new THREE.Mesh(new THREE.PlaneGeometry(o.w, o.h), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, color: 0xF4F4F4 }));
-      pic.position.z = .0095; pic.userData.idx = O.indexOf(o); g.add(pic); pickables.push(pic);
+      pic.position.z = .016; pic.userData.idx = O.indexOf(o); g.add(pic); pickables.push(pic);
       const pl = new THREE.Mesh(new THREE.PlaneGeometry(.2, .117), new THREE.MeshBasicMaterial({ map: plaqueTex(o), toneMapped: false }));
       pl.position.set(o.w / 2 + .32, 1.38 - cy, -.024); g.add(pl);
       // spot au plafond, orienté vers l'œuvre
