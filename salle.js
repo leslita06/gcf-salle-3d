@@ -10,7 +10,10 @@ const T = {
     note:'Salle imaginée pour la démonstration : ce n’est pas le lieu réel. Images : Galerie Cécile Fakhoury, cecilefakhoury.com.',
     nogl:'Votre navigateur n’affiche pas la 3D. Les œuvres restent visibles sur le site de la galerie.',
     hintDesk:'Glissez pour regarder autour de vous · flèches ou ZQSD pour avancer · molette pour approcher · cliquez sur une œuvre pour son cartel',
-    hintTouch:'Glissez pour regarder · touchez le sol pour avancer · touchez une œuvre pour son cartel', w:'Œuvre'},
+    hintTouch:'Glissez pour regarder · touchez le sol pour avancer · touchez une œuvre ou un ● pour son cartel', w:'Œuvre',
+    more:'Cartel', bigview:'Voir en grand', aboutart:'L’artiste', lartist:'Page de l’artiste sur cecilefakhoury.com ↗', lexpo:'L’exposition sur le site de la galerie ↗',
+    bio:'Né en 1986 à Bouaké (Côte d’Ivoire), Roméo Mivekannin vit et travaille entre Toulouse (France) et Cotonou (Bénin).',
+    lbhelp:'Cliquez ou touchez pour zoomer, glissez pour vous déplacer'},
   en: {demo:'Demonstration · imagined room, not the actual gallery', tour:'Guided tour', pause:'Pause', courtesy:'Courtesy of the artist and Galerie Cécile Fakhoury',
     ask:'Request the file', name:'Full name', mail:'Email', send:'Send request', nosend:'Demonstration: nothing is sent.', thanks:'Thank you.',
     thanks2:'In the live version, the gallery would receive your request and send the file for this work. Nothing has been sent here.',
@@ -19,12 +22,18 @@ const T = {
     note:'Room imagined for this demonstration: not the actual venue. Images: Galerie Cécile Fakhoury, cecilefakhoury.com.',
     nogl:'Your browser cannot display 3D. The works remain visible on the gallery website.',
     hintDesk:'Drag to look around · arrow keys or WASD to walk · scroll to move closer · click a work to see its label',
-    hintTouch:'Drag to look · tap the floor to walk · tap a work to see its label', w:'Work'}
+    hintTouch:'Drag to look · tap the floor to walk · tap a work or a ● to see its label', w:'Work',
+    more:'Label', bigview:'View large', aboutart:'The artist', lartist:'Artist page on cecilefakhoury.com ↗', lexpo:'The exhibition on the gallery website ↗',
+    bio:'Born in 1986 in Bouaké (Ivory Coast), Roméo Mivekannin lives and works between Toulouse (France) and Cotonou (Benin).',
+    lbhelp:'Click or tap to zoom, drag to move around'}
 };
 let lang = 'fr';
 try { const l = localStorage.getItem('cf-lang'); if (l === 'en' || l === 'fr') lang = l; } catch (e) {}
 const $ = s => document.querySelector(s);
 const touch = matchMedia('(pointer:coarse)').matches;
+const QS = new URLSearchParams(location.search); const FILM = QS.has('film');
+if (FILM) document.body.classList.add('film');
+let VT = 0; const NOW = () => FILM ? VT : performance.now();
 
 function setLang(l) {
   lang = l; document.documentElement.lang = l;
@@ -32,6 +41,8 @@ function setLang(l) {
   document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === l));
   $('#tour [data-k]').textContent = touring ? T[l].pause : T[l].tour;
   if (current >= 0 && !$('#cartel').hidden) fillCartel(current);
+  const base = l === 'en' ? 'https://cecilefakhoury.com/en/' : 'https://cecilefakhoury.com/';
+  $('#l-artist').href = base + 'artists/93-romeo-mivekannin/overview/'; $('#l-expo').href = base + 'exhibitions/130-dieu-nest-pas-oblige-romeo-mivekannin-abidjan/overview/';
   try { localStorage.setItem('cf-lang', l); } catch (e) {}
 }
 document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
@@ -40,9 +51,9 @@ document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click
 const canvas = $('#scene');
 let renderer;
 try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: FILM });
 } catch (e) { $('#nogl').hidden = false; $('#intro').hidden = true; throw e; }
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.setPixelRatio(FILM ? devicePixelRatio : Math.min(devicePixelRatio, 1.75));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.NeutralToneMapping;
 renderer.toneMappingExposure = 1.0;
@@ -175,28 +186,64 @@ let anim = null; let current = -1; let touring = false; let tourTimer = null;
 function applyCam() { camera.position.copy(pos); camera.rotation.set(pitch, yaw, 0, 'YXZ'); }
 function clampPos(p) { p.x = Math.max(-X + .6, Math.min(X - .6, p.x)); p.z = Math.max(-Z + .6, Math.min(Z - .6, p.z));
   if (Math.abs(p.x) < 1.45 && Math.abs(p.z - .4) < .6) { if (Math.abs(p.z - .4) > Math.abs(p.x) * .4) p.z = .4 + Math.sign(p.z - .4 || 1) * .6; else p.x = Math.sign(p.x || 1) * 1.45; } }
-function viewFor(i) {
+let zoomed = false;
+function viewFor(i, close) {
   const w = works[i], o = w.o; const vf = THREE.MathUtils.degToRad(camera.fov) / 2; const hf = Math.atan(Math.tan(vf) * camera.aspect);
   let d = Math.max((o.h * 1.18) / (2 * Math.tan(vf)), (o.w * 1.15) / (2 * Math.tan(hf)), 1.7);
   const maxd = (Math.abs(w.n.x) > .5 ? 2 * X : 2 * Z) - 1.0; d = Math.min(d, maxd);
-  const p = w.pos.clone().addScaledVector(w.n, d); p.y = EYE;
-  const dir = w.pos.clone().sub(p); const ty = Math.atan2(-dir.x, -dir.z); const tp = Math.atan2(dir.y, Math.hypot(dir.x, dir.z));
+  const tgt = w.pos.clone(); if (close) { d = Math.max(.75, Math.min(d * .55, 1.6)); tgt.y += o.h * .2; }
+  const p = w.pos.clone().addScaledVector(w.n, d); p.y = close ? THREE.MathUtils.clamp(tgt.y, 1.1, 2.6) : EYE;
+  const dir = tgt.clone().sub(p); const ty = Math.atan2(-dir.x, -dir.z); const tp = Math.atan2(dir.y, Math.hypot(dir.x, dir.z));
   return { p, ty, tp };
 }
-function flyTo(i, dur = 1700, done) {
-  const v = viewFor(i); let dy = v.ty - yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
-  anim = { t0: performance.now(), dur, p0: pos.clone(), p1: v.p, y0: yaw, y1: yaw + dy, a0: pitch, a1: v.tp, done };
+function flyTo(i, dur = 1700, done, close = false) {
+  zoomed = close; $('#zoom').setAttribute('aria-pressed', close); document.body.classList.toggle('zoomed', close);
+  const v = viewFor(i, close); let dy = v.ty - yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+  anim = { t0: NOW(), dur, p0: pos.clone(), p1: v.p, y0: yaw, y1: yaw + dy, a0: pitch, a1: v.tp, done };
   current = i; showCaption(i);
 }
 const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-function showCaption(i) { const o = O[i]; $('#cap-title').textContent = o.title; $('#cap-n').textContent = (i + 1) + ' / ' + O.length; $('#caption').hidden = false; }
+function showCaption(i) { const o = O[i]; $('#cap-title').textContent = o.title; $('#cap-n').textContent = (ORDER.indexOf(i) + 1) + ' / ' + O.length; $('#caption').hidden = false; $('#zoom').disabled = false; }
+$('#cap-more').onclick = () => { if (current >= 0) openCartel(current); };
+$('#zoom').onclick = () => { if (current < 0) return; stopTour(); $('#cartel').hidden = true; flyTo(current, 1300, null, !zoomed); };
+
+// ---------- Œuvre en grand (loupe) ----------
+let lbz = 1, lbx = 0, lby = 0, lbd = null;
+function lbApply() { $('#lbimg').style.transform = `translate(${lbx}px,${lby}px) scale(${lbz})`; $('#lb').classList.toggle('in', lbz > 1); }
+function openLB(i) { const o = O[i]; $('#lbimg').src = o.img; $('#lbimg').alt = o.title; $('#lbcap').innerHTML = '';
+  const em = document.createElement('em'); em.textContent = o.title; $('#lbcap').append('Roméo Mivekannin · ', em, ' · 2026 · ' + (lang === 'fr' ? o.mfr : o.men) + ' · ' + o.cm);
+  lbz = 1; lbx = lby = 0; lbApply(); $('#lb').hidden = false; }
+function closeLB() { $('#lb').hidden = true; }
+$('#c-zoom').onclick = () => { if (current >= 0) openLB(current); };
+$('#lbclose').onclick = closeLB;
+const lbs = $('#lbstage');
+lbs.addEventListener('pointerdown', e => { lbs.setPointerCapture(e.pointerId); lbd = { x: e.clientX, y: e.clientY, bx: lbx, by: lby, m: 0 }; });
+lbs.addEventListener('pointermove', e => { if (!lbd) return; const dx = e.clientX - lbd.x, dy = e.clientY - lbd.y; lbd.m = Math.abs(dx) + Math.abs(dy);
+  if (lbz > 1) { lbx = lbd.bx + dx; lby = lbd.by + dy; lbApply(); } });
+lbs.addEventListener('pointerup', e => { if (lbd && lbd.m < 6) { if (lbz > 1) { lbz = 1; lbx = lby = 0; } else { const r = $('#lbimg').getBoundingClientRect();
+    const cx = e.clientX - (r.left + r.width / 2), cy = e.clientY - (r.top + r.height / 2); lbz = 2.6; lbx = -cx * (lbz - 1); lby = -cy * (lbz - 1); } lbApply(); } lbd = null; });
+lbs.addEventListener('wheel', e => { e.preventDefault(); lbz = Math.max(1, Math.min(4, lbz * (e.deltaY < 0 ? 1.15 : .87))); if (lbz === 1) lbx = lby = 0; lbApply(); }, { passive: false });
+
+// ---------- Pastilles (une par œuvre) ----------
+const spots = [];
+function buildSpots() { works.forEach((w, i) => { if (!w) return; const b = document.createElement('button'); b.className = 'spot'; b.setAttribute('aria-label', O[i].title);
+  b.innerHTML = '<span></span>'; b.onclick = () => { flyTo(i, 1400); openCartel(i); }; $('#spots').append(b);
+  const a = w.pos.clone(); const right = new THREE.Vector3(-w.n.z, 0, w.n.x); // vers la droite en regardant l'œuvre
+  a.addScaledVector(right, -(w.o.w / 2) + .12).add(new THREE.Vector3(0, w.o.h / 2 + .16, 0)).addScaledVector(w.n, .04);
+  spots.push({ b, a, i, n: w.n }); }); }
+const _v = new THREE.Vector3();
+function placeSpots() { if (!spots.length) return; const W = innerWidth, H = innerHeight;
+  spots.forEach(s => { _v.copy(s.a); const toCam = camera.position.clone().sub(s.a); const facing = toCam.dot(s.n) > 0; const dist = toCam.length();
+    _v.project(camera); const vis = facing && _v.z < 1 && Math.abs(_v.x) < 1.02 && Math.abs(_v.y) < 1.02 && dist < 20 && s.i !== current;
+    s.b.style.display = vis ? '' : 'none'; if (vis) s.b.style.transform = `translate(${(_v.x + 1) / 2 * W}px,${(1 - _v.y) / 2 * H}px)`;
+  }); }
 
 // ---------- Cartel ----------
 function fillCartel(i) { const o = O[i];
   $('#c-img').src = o.img; $('#c-img').alt = o.title; $('#c-title').textContent = o.title;
   $('#c-med').textContent = lang === 'fr' ? o.mfr : o.men; $('#c-dim').textContent = lang === 'fr' ? o.cm : o.inch + ' (' + o.cm + ')'; }
-function openCartel(i) { stopTour(); fillCartel(i); $('#askform').hidden = true; $('#askok').hidden = true; $('#askbtn').hidden = false; $('#cartel').hidden = false; $('#caption').hidden = true; }
+function openCartel(i) { stopTour(); current = i; fillCartel(i); $('#askform').hidden = true; $('#askok').hidden = true; $('#askbtn').hidden = false; $('#cartel').hidden = false; $('#caption').hidden = true; }
 function closeCartel() { $('#cartel').hidden = true; if (current >= 0) showCaption(current); }
 $('#cclose').onclick = closeCartel;
 $('#askbtn').onclick = () => { $('#askbtn').hidden = true; $('#askform').hidden = false; };
@@ -204,13 +251,17 @@ $('#ask').onsubmit = e => { e.preventDefault(); $('#askform').hidden = true; $('
 
 // ---------- Visite guidée ----------
 const ORDER = []; WALLS.forEach(W => W.ids.forEach(id => { if (id !== 'titre') ORDER.push(id - 1); }));
+const DWELL = FILM ? +(QS.get('dwell') || 2600) : 5200;
+function dwell() { if (!touring) return; const b = $('#cap-prog'); b.style.transition = 'none'; b.style.width = '0'; void b.offsetWidth;
+  b.style.transition = `width ${DWELL}ms linear`; b.style.width = '100%'; tourTimer = FILM ? null : setTimeout(tourStep, DWELL); if (FILM) filmWait = VT + DWELL; }
+let filmWait = 0;
 function tourStep() { if (!touring) return; const k = ORDER.indexOf(current); const next = ORDER[(k + 1) % ORDER.length];
-  flyTo(next, 2200, () => { if (touring) tourTimer = setTimeout(tourStep, 4200); }); }
+  $('#cap-prog').style.width = '0'; flyTo(next, 2400, dwell); }
 function startTour() { touring = true; $('#cartel').hidden = true; $('#tour .ico').textContent = '❚❚'; $('#tour [data-k]').textContent = T[lang].pause;
-  if (current < 0) { flyTo(ORDER[0], 2400, () => { if (touring) tourTimer = setTimeout(tourStep, 4200); }); } else tourStep(); }
-function stopTour() { touring = false; clearTimeout(tourTimer); $('#tour .ico').textContent = '▶'; $('#tour [data-k]').textContent = T[lang].tour; }
+  document.body.classList.add('touring'); if (current < 0) flyTo(ORDER[0], 2600, dwell); else tourStep(); }
+function stopTour() { touring = false; clearTimeout(tourTimer); document.body.classList.remove('touring'); const b = $('#cap-prog'); if (b) { b.style.transition = 'none'; b.style.width = '0'; } $('#tour .ico').textContent = '▶'; $('#tour [data-k]').textContent = T[lang].tour; }
 $('#tour').onclick = () => touring ? stopTour() : startTour();
-function step(s) { stopTour(); $('#cartel').hidden = true; const k = current < 0 ? (s > 0 ? -1 : 0) : ORDER.indexOf(current); flyTo(ORDER[(k + s + ORDER.length) % ORDER.length]); }
+function step(s) { stopTour(); $('#cartel').hidden = true; if (zoomed) { const k = ORDER.indexOf(current); flyTo(ORDER[(k + s + ORDER.length) % ORDER.length], 1500, null, true); return; } const k = current < 0 ? (s > 0 ? -1 : 0) : ORDER.indexOf(current); flyTo(ORDER[(k + s + ORDER.length) % ORDER.length]); }
 $('#next').onclick = () => step(1); $('#prev').onclick = () => step(-1);
 let hintT; function hint() { const h = $('#hint'); h.textContent = touch ? T[lang].hintTouch : T[lang].hintDesk; h.hidden = false; clearTimeout(hintT); hintT = setTimeout(() => h.hidden = true, 6500); }
 $('#help').onclick = hint;
@@ -218,7 +269,7 @@ $('#help').onclick = hint;
 // ---------- Commandes ----------
 const ray = new THREE.Raycaster(); const ndc = new THREE.Vector2();
 let down = null; const ptrs = new Map();
-canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); down = { x: e.clientX, y: e.clientY, t: performance.now(), moved: 0 }; canvas.classList.add('drag'); });
+canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); down = { x: e.clientX, y: e.clientY, t: NOW(), moved: 0 }; canvas.classList.add('drag'); });
 canvas.addEventListener('pointermove', e => {
   if (!ptrs.has(e.pointerId)) { hover(e); return; }
   const [lx, ly] = ptrs.get(e.pointerId); const dx = e.clientX - lx, dy = e.clientY - ly; ptrs.set(e.pointerId, [e.clientX, e.clientY]);
@@ -233,35 +284,38 @@ function hover(e) { if (touch) return; const h = pick(e, pickables); canvas.clas
 function click(e) {
   const h = pick(e, [...pickables, floor]);
   if (!h) return;
-  if (h.object === floor) { stopTour(); $('#cartel').hidden = true; const p = h.point.clone(); p.y = EYE; clampPos(p);
-    anim = { t0: performance.now(), dur: 1100, p0: pos.clone(), p1: p, y0: yaw, y1: yaw, a0: pitch, a1: pitch }; return; }
+  if (h.object === floor) { stopTour(); $('#cartel').hidden = true; zoomed = false; document.body.classList.remove('zoomed'); $('#zoom').setAttribute('aria-pressed', false); const p = h.point.clone(); p.y = EYE; clampPos(p);
+    anim = { t0: NOW(), dur: 1100, p0: pos.clone(), p1: p, y0: yaw, y1: yaw, a0: pitch, a1: pitch }; return; }
   const i = h.object.userData.idx; flyTo(i, 1400); openCartel(i);
 }
 canvas.addEventListener('wheel', e => { e.preventDefault(); stopTour(); anim = null; const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)); pos.addScaledVector(f, -e.deltaY * .004); clampPos(pos); }, { passive: false });
 const keys = {}; addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
-  if (e.code === 'Escape') closeCartel();
+  if (e.code === 'Escape') { if (!$('#lb').hidden) return closeLB(); closeCartel(); }
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) { keys[e.code] = true; e.preventDefault(); if (touring) stopTour(); anim = null; } });
 addEventListener('keyup', e => { keys[e.code] = false; });
 
 function resize() { const w = innerWidth, h = innerHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.fov = w / h < .8 ? 72 : 62; camera.updateProjectionMatrix(); }
 addEventListener('resize', resize); resize();
 
-let last = performance.now();
+let last = NOW();
 function loop(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (FILM && touring && !anim && filmWait && now >= filmWait) { filmWait = 0; tourStep(); }
   if (anim) { const t = Math.min(1, (now - anim.t0) / anim.dur), k = ease(t); pos.lerpVectors(anim.p0, anim.p1, k); yaw = anim.y0 + (anim.y1 - anim.y0) * k; pitch = anim.a0 + (anim.a1 - anim.a0) * k;
     if (t >= 1) { const d = anim.done; anim = null; d && d(); } }
   const f = (keys.ArrowUp || keys.KeyW ? 1 : 0) - (keys.ArrowDown || keys.KeyS ? 1 : 0); const s = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0); const r = (keys.ArrowLeft ? 1 : 0) - (keys.ArrowRight ? 1 : 0);
   if (f || s || r) { yaw += r * 1.6 * dt; const fw = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)), rt = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
     pos.addScaledVector(fw, f * 2.2 * dt).addScaledVector(rt, s * 2.2 * dt); clampPos(pos); }
-  applyCam(); renderer.render(scene, camera); requestAnimationFrame(loop);
+  applyCam(); renderer.render(scene, camera); placeSpots(); if (!FILM) requestAnimationFrame(loop);
 }
 
 function enter(withTour) { $('#intro').classList.add('out'); setTimeout(() => $('#intro').hidden = true, 800); canvas.focus(); if (withTour) startTour(); else hint(); }
 $('#enter').onclick = () => enter(false); $('#enter-tour').onclick = () => enter(true);
 
-window.__salle = { ready: false, enter, flyTo: (i, d) => flyTo(i, d || 1), openCartel, closeCartel, startTour, stopTour, setView: (x, z, y, p) => { anim = null; pos.set(x, EYE, z); yaw = y; pitch = p; } };
+window.__salle = { ready: false, enter, flyTo: (i, d, c) => flyTo(i, d || 1, null, !!c), openCartel, closeCartel, startTour, stopTour, openLB, closeLB, ORDER: () => ORDER,
+  frame: ms => { VT += ms; loop(VT); }, glide: (x, z, y, p, x2, z2, y2, p2, dur) => { anim = { t0: NOW(), dur, p0: new THREE.Vector3(x, EYE, z), p1: new THREE.Vector3(x2, EYE, z2), y0: y, y1: y2, a0: p, a1: p2 }; },
+  busy: () => !!anim, glideTo: (x2, z2, y2, p2, dur) => { zoomed = false; let dy = y2 - yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); anim = { t0: NOW(), dur, p0: pos.clone(), p1: new THREE.Vector3(x2, EYE, z2), y0: yaw, y1: yaw + dy, a0: pitch, a1: p2 }; }, setView: (x, z, y, p) => { anim = null; pos.set(x, EYE, z); yaw = y; pitch = p; } };
 
 setLang(lang);
 Promise.all([document.fonts.load('italic 400 40px "Cormorant Garamond"'), document.fonts.load('italic 500 40px "Cormorant Garamond"'), document.fonts.load('600 20px Inter'), document.fonts.load('400 20px Inter')])
-  .catch(() => {}).then(() => { build(); requestAnimationFrame(loop); });
+  .catch(() => {}).then(() => { build(); buildSpots(); if (FILM) loop(0); else requestAnimationFrame(loop); });

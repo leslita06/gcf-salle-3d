@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 <script type="importmap">{"imports":{"three":"./lib/three.module.min.js"}}</script>
 </head>
 <body>
@@ -24,12 +24,14 @@
   </div>
 </header>
 
-<div id="caption" hidden><em id="cap-title"></em><span id="cap-n"></span></div>
+<div id="caption" hidden><em id="cap-title"></em><span id="cap-n"></span><button id="cap-more" data-k="more">Cartel</button><i id="cap-prog"></i></div>
+<div id="spots" aria-hidden="false"></div>
 
 <nav id="bar" aria-label="Visite">
   <button id="prev" aria-label="Œuvre précédente">‹</button>
   <button id="tour" class="main"><span class="ico">▶</span> <span data-k="tour">Visite guidée</span></button>
   <button id="next" aria-label="Œuvre suivante">›</button>
+  <button id="zoom" aria-label="Zoom sur l’œuvre" aria-pressed="false" disabled><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15.5 15.5 21 21M10.5 7.5v6M7.5 10.5h6" stroke="currentColor" stroke-width="1.6" fill="none"/></svg></button>
   <button id="help" aria-label="Aide">?</button>
 </nav>
 
@@ -37,7 +39,7 @@
 
 <aside id="cartel" hidden aria-live="polite">
   <button class="close" id="cclose" aria-label="Fermer">×</button>
-  <div class="cimg"><img id="c-img" alt=""></div>
+  <button class="cimg" id="c-zoom" aria-label="Voir l’œuvre en grand"><img id="c-img" alt=""><span class="zbadge" data-k="bigview">Voir en grand</span></button>
   <div class="cbody">
     <p class="artist">Roméo Mivekannin</p>
     <h2 id="c-title"></h2>
@@ -45,6 +47,12 @@
     <p id="c-med"></p>
     <p id="c-dim"></p>
     <p class="courtesy" data-k="courtesy">Courtesy de l’artiste et de la Galerie Cécile Fakhoury</p>
+    <div class="abio">
+      <p class="artist" data-k="aboutart">L’artiste</p>
+      <p data-k="bio">Né en 1986 à Bouaké (Côte d’Ivoire), Roméo Mivekannin vit et travaille entre Toulouse (France) et Cotonou (Bénin).</p>
+      <p class="links"><a id="l-artist" href="https://cecilefakhoury.com/artists/93-romeo-mivekannin/overview/" target="_blank" rel="noopener" data-k="lartist">Page de l’artiste sur cecilefakhoury.com ↗</a>
+      <a id="l-expo" href="https://cecilefakhoury.com/exhibitions/130-dieu-nest-pas-oblige-romeo-mivekannin-abidjan/overview/" target="_blank" rel="noopener" data-k="lexpo">L’exposition sur le site de la galerie ↗</a></p>
+    </div>
     <form id="ask">
       <button type="button" id="askbtn" class="cta" data-k="ask">Demander le dossier</button>
       <div id="askform" hidden>
@@ -76,9 +84,17 @@
   </div>
 </section>
 
+<div id="lb" hidden role="dialog" aria-label="Œuvre en grand">
+  <div id="lbstage"><img id="lbimg" alt="" draggable="false"></div>
+  <p id="lbcap"></p>
+  <p id="lbhelp" data-k="lbhelp">Cliquez ou touchez pour zoomer, glissez pour vous déplacer</p>
+  <button id="lbclose" aria-label="Fermer">×</button>
+</div>
+<div id="film" hidden><div id="filmtxt"></div></div>
+
 <div id="nogl" hidden><p data-k="nogl">Votre navigateur n’affiche pas la 3D. Les œuvres restent visibles sur le site de la galerie.</p></div>
 
-<script src="data.js?v=3"></script>
-<script type="module" src="salle.js?v=3"></script>
+<script src="data.js?v=4"></script>
+<script type="module" src="salle.js?v=4"></script>
 </body>
 </html>
