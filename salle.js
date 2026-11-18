@@ -51,7 +51,7 @@ document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click
 const canvas = $('#scene');
 let renderer;
 try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: FILM });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: FILM, logarithmicDepthBuffer: true });
 } catch (e) { $('#nogl').hidden = false; $('#intro').hidden = true; throw e; }
 renderer.setPixelRatio(FILM ? devicePixelRatio : Math.min(devicePixelRatio, 1.75));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -60,7 +60,11 @@ renderer.toneMappingExposure = 1.0;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xEDEAE4);
-const camera = new THREE.PerspectiveCamera(62, 1, 0.05, 80);
+const camera = new THREE.PerspectiveCamera(62, 1, 0.01, 60);
+// v5 : si le téléphone perd le contexte 3D (mémoire), on le garde et on le restaure au lieu d'afficher des toiles vides
+canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); }, false);
+canvas.addEventListener('webglcontextrestored', () => { scene.traverse(o => { const m = o.material; if (m && m.map) m.map.needsUpdate = true; if (m) m.needsUpdate = true; }); }, false);
+['gesturestart', 'gesturechange'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
 const EYE = 1.6, X = 8, Z = 5.5, HC = 4.5;
 
 const manager = new THREE.LoadingManager();
@@ -166,9 +170,10 @@ function build() {
       sh.position.set(.03, -.05, -.026); g.add(sh);
       const box = new THREE.Mesh(new THREE.BoxGeometry(o.w, o.h, .035), new THREE.MeshStandardMaterial({ color: 0x0c0c0c, roughness: 1 }));
       box.position.z = -.008; g.add(box);
-      const tex = loader.load(o.img); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-      const pic = new THREE.Mesh(new THREE.PlaneGeometry(o.w, o.h), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, color: 0xF4F4F4 }));
-      pic.position.z = .016; pic.userData.idx = O.indexOf(o); g.add(pic); pickables.push(pic);
+      const tex = loader.load(o.img); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      tex.generateMipmaps = true; tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter;
+      const pic = new THREE.Mesh(new THREE.PlaneGeometry(o.w, o.h), new THREE.MeshBasicMaterial({ map: tex, toneMapped: false, color: 0xF4F4F4, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
+      pic.position.z = .024; pic.frustumCulled = false; pic.renderOrder = 2; pic.userData.idx = O.indexOf(o); g.add(pic); pickables.push(pic);
       const pl = new THREE.Mesh(new THREE.PlaneGeometry(.2, .117), new THREE.MeshBasicMaterial({ map: plaqueTex(o), toneMapped: false }));
       pl.position.set(o.w / 2 + .32, 1.38 - cy, -.024); g.add(pl);
       // spot au plafond, orienté vers l'œuvre
@@ -210,7 +215,7 @@ $('#zoom').onclick = () => { if (current < 0) return; stopTour(); $('#cartel').h
 
 // ---------- Œuvre en grand (loupe) ----------
 let lbz = 1, lbx = 0, lby = 0, lbd = null;
-function lbApply() { $('#lbimg').style.transform = `translate(${lbx}px,${lby}px) scale(${lbz})`; $('#lb').classList.toggle('in', lbz > 1); }
+function lbApply() { $('#lbimg').style.transform = `translate3d(${lbx}px,${lby}px,0) scale(${lbz})`; $('#lb').classList.toggle('in', lbz > 1); }
 function openLB(i) { const o = O[i]; $('#lbimg').src = o.img; $('#lbimg').alt = o.title; $('#lbcap').innerHTML = '';
   const em = document.createElement('em'); em.textContent = o.title; $('#lbcap').append('Roméo Mivekannin · ', em, ' · 2026 · ' + (lang === 'fr' ? o.mfr : o.men) + ' · ' + o.cm);
   lbz = 1; lbx = lby = 0; lbApply(); $('#lb').hidden = false; }
@@ -218,10 +223,14 @@ function closeLB() { $('#lb').hidden = true; }
 $('#c-zoom').onclick = () => { if (current >= 0) openLB(current); };
 $('#lbclose').onclick = closeLB;
 const lbs = $('#lbstage');
-lbs.addEventListener('pointerdown', e => { lbs.setPointerCapture(e.pointerId); lbd = { x: e.clientX, y: e.clientY, bx: lbx, by: lby, m: 0 }; });
-lbs.addEventListener('pointermove', e => { if (!lbd) return; const dx = e.clientX - lbd.x, dy = e.clientY - lbd.y; lbd.m = Math.abs(dx) + Math.abs(dy);
+const lbp = new Map(); let lbpd = 0, lbz0 = 1; const lbdist = () => { const v = [...lbp.values()]; return Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1]); };
+lbs.addEventListener('pointerdown', e => { lbs.setPointerCapture(e.pointerId); lbp.set(e.pointerId, [e.clientX, e.clientY]); if (lbp.size >= 2) { lbpd = lbdist(); lbz0 = lbz; } lbd = { x: e.clientX, y: e.clientY, bx: lbx, by: lby, m: 0 }; });
+lbs.addEventListener('pointercancel', e => { lbp.delete(e.pointerId); lbpd = 0; lbd = null; });
+lbs.addEventListener('pointermove', e => { if (lbp.has(e.pointerId)) lbp.set(e.pointerId, [e.clientX, e.clientY]);
+  if (lbp.size >= 2 && lbpd) { lbz = Math.max(1, Math.min(4, lbz0 * lbdist() / lbpd)); if (lbz === 1) lbx = lby = 0; if (lbd) lbd.m = 99; lbApply(); return; }
+  if (!lbd) return; const dx = e.clientX - lbd.x, dy = e.clientY - lbd.y; lbd.m = Math.abs(dx) + Math.abs(dy);
   if (lbz > 1) { lbx = lbd.bx + dx; lby = lbd.by + dy; lbApply(); } });
-lbs.addEventListener('pointerup', e => { if (lbd && lbd.m < 6) { if (lbz > 1) { lbz = 1; lbx = lby = 0; } else { const r = $('#lbimg').getBoundingClientRect();
+lbs.addEventListener('pointerup', e => { lbp.delete(e.pointerId); if (lbp.size < 2) lbpd = 0; if (lbd && lbd.m < 6 && !lbp.size) { if (lbz > 1) { lbz = 1; lbx = lby = 0; } else { const r = $('#lbimg').getBoundingClientRect();
     const cx = e.clientX - (r.left + r.width / 2), cy = e.clientY - (r.top + r.height / 2); lbz = 2.6; lbx = -cx * (lbz - 1); lby = -cy * (lbz - 1); } lbApply(); } lbd = null; });
 lbs.addEventListener('wheel', e => { e.preventDefault(); lbz = Math.max(1, Math.min(4, lbz * (e.deltaY < 0 ? 1.15 : .87))); if (lbz === 1) lbx = lby = 0; lbApply(); }, { passive: false });
 
@@ -269,16 +278,19 @@ $('#help').onclick = hint;
 // ---------- Commandes ----------
 const ray = new THREE.Raycaster(); const ndc = new THREE.Vector2();
 let down = null; const ptrs = new Map();
-canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); down = { x: e.clientX, y: e.clientY, t: NOW(), moved: 0 }; canvas.classList.add('drag'); });
+let pinchD = 0; const pdist = () => { const v = [...ptrs.values()]; return Math.hypot(v[0][0] - v[1][0], v[0][1] - v[1][1]); };
+canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, [e.clientX, e.clientY]); pinchD = ptrs.size >= 2 ? pdist() : 0; down = { x: e.clientX, y: e.clientY, t: NOW(), moved: 0 }; canvas.classList.add('drag'); });
+function dolly(m) { stopTour(); anim = null; const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)); pos.addScaledVector(f, m); clampPos(pos); }
 canvas.addEventListener('pointermove', e => {
   if (!ptrs.has(e.pointerId)) { hover(e); return; }
   const [lx, ly] = ptrs.get(e.pointerId); const dx = e.clientX - lx, dy = e.clientY - ly; ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+  if (ptrs.size >= 2) { const d = pdist(); if (pinchD) dolly((d - pinchD) * .012); pinchD = d; if (down) down.moved = 99; return; }
   if (down) down.moved += Math.abs(dx) + Math.abs(dy);
   if (down && down.moved > 6) { if (touring) stopTour(); anim = null; const k = touch ? .005 : .0035; yaw += dx * k; pitch = Math.max(-.6, Math.min(.5, pitch + dy * k)); }
 });
-canvas.addEventListener('pointerup', e => { ptrs.delete(e.pointerId); canvas.classList.remove('drag');
+canvas.addEventListener('pointerup', e => { ptrs.delete(e.pointerId); pinchD = 0; canvas.classList.remove('drag');
   if (down && down.moved <= 6) click(e); down = null; });
-canvas.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); down = null; });
+canvas.addEventListener('pointercancel', e => { ptrs.delete(e.pointerId); pinchD = 0; down = null; });
 function pick(e, objs) { const r = canvas.getBoundingClientRect(); ndc.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1); ray.setFromCamera(ndc, camera); return ray.intersectObjects(objs, false)[0]; }
 function hover(e) { if (touch) return; const h = pick(e, pickables); canvas.classList.toggle('hover', !!h); }
 function click(e) {
@@ -288,7 +300,7 @@ function click(e) {
     anim = { t0: NOW(), dur: 1100, p0: pos.clone(), p1: p, y0: yaw, y1: yaw, a0: pitch, a1: pitch }; return; }
   const i = h.object.userData.idx; flyTo(i, 1400); openCartel(i);
 }
-canvas.addEventListener('wheel', e => { e.preventDefault(); stopTour(); anim = null; const f = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw)); pos.addScaledVector(f, -e.deltaY * .004); clampPos(pos); }, { passive: false });
+canvas.addEventListener('wheel', e => { e.preventDefault(); dolly(Math.max(-.6, Math.min(.6, -e.deltaY * (e.ctrlKey ? .012 : .004)))); }, { passive: false });
 const keys = {}; addEventListener('keydown', e => { if (e.target.tagName === 'INPUT') return;
   if (e.code === 'Escape') { if (!$('#lb').hidden) return closeLB(); closeCartel(); }
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) { keys[e.code] = true; e.preventDefault(); if (touring) stopTour(); anim = null; } });

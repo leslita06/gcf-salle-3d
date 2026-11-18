@@ -121,3 +121,4 @@ body.film #demo{font-size:13px}
   #cartel{max-height:82vh}
   #lbclose{top:30px}
 }
+#lbimg{will-change:transform;-webkit-user-drag:none}
